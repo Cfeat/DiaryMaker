@@ -7,8 +7,9 @@ import '../../app/shell_action_gateway.dart';
 import '../../core/entry/entry.dart';
 import '../../core/sync/sync_meta.dart';
 import '../../foundation/platform/layout_breakpoints.dart';
+import '../../app/l10n/app_strings.dart';
 import '../editor/editor_page.dart';
-import '../settings_sync/sync_settings_page.dart';
+import '../settings/settings_hub_page.dart';
 
 /// Diary timeline: date-desc summaries, empty state, desktop ↑↓ / mobile swipe.
 class TimelinePage extends ConsumerStatefulWidget {
@@ -82,14 +83,14 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
       appBar: widget.embedded
           ? null
           : AppBar(
-              title: const Text('PrivateNote'),
+              title: const Text(S.timelineTitle),
               actions: [
                 conflicts.when(
                   data: (list) => list.isEmpty
                       ? const SizedBox.shrink()
                       : IconButton(
                           key: const Key('timeline_conflict_button'),
-                          tooltip: 'Resolve sync conflicts',
+                          tooltip: S.timelineConflicts,
                           onPressed: () => _showConflicts(list),
                           icon: Badge(
                             label: Text('${list.length}'),
@@ -101,15 +102,15 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
                 ),
                 IconButton(
                   key: const Key('timeline_sync_settings'),
-                  tooltip: 'Sync settings',
+                  tooltip: S.timelineSyncSettings,
                   onPressed: () {
                     Navigator.of(context).push(
                       MaterialPageRoute<void>(
-                        builder: (_) => const SyncSettingsPage(),
+                        builder: (_) => const SettingsHubPage(),
                       ),
                     );
                   },
-                  icon: const Icon(Icons.cloud_outlined),
+                  icon: const Icon(Icons.tune_outlined),
                 ),
               ],
             ),
@@ -117,8 +118,9 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
           ? null
           : FloatingActionButton(
               key: const Key('timeline_new_entry'),
+              tooltip: S.timelineNew,
               onPressed: () => _openEditor(null),
-              child: const Icon(Icons.add),
+              child: const Icon(Icons.edit_note_rounded),
             ),
       body: asyncEntries.when(
         loading: () => const Center(child: CircularProgressIndicator()),
@@ -207,18 +209,18 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Delete entry?'),
+        title: const Text(S.deleteEntryTitle),
         content: Text(
-          entry.title.isEmpty ? 'This entry will be removed.' : entry.title,
+          entry.title.isEmpty ? S.deleteEntryBody : entry.title,
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
+            child: const Text(S.cancel),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Delete'),
+            child: const Text(S.delete),
           ),
         ],
       ),
@@ -250,7 +252,7 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
     await showDialog<void>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Sync conflicts'),
+        title: const Text(S.syncConflictsTitle),
         content: SizedBox(
           width: 360,
           child: ListView(
@@ -259,9 +261,7 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
               for (final meta in list)
                 ListTile(
                   title: Text(meta.entryId),
-                  subtitle: const Text(
-                    'Local and remote both changed. Choose which side to keep.',
-                  ),
+                  subtitle: const Text(S.syncConflictSubtitle),
                   trailing: Wrap(
                     spacing: 4,
                     children: [
@@ -281,7 +281,7 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
                               .refresh();
                           if (ctx.mounted) Navigator.pop(ctx);
                         },
-                        child: const Text('Keep local'),
+                        child: const Text(S.keepLocal),
                       ),
                       TextButton(
                         onPressed: () async {
@@ -294,7 +294,7 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
                               .refresh();
                           if (ctx.mounted) Navigator.pop(ctx);
                         },
-                        child: const Text('Keep remote'),
+                        child: const Text(S.keepRemote),
                       ),
                     ],
                   ),
@@ -305,7 +305,7 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Close'),
+            child: const Text(S.close),
           ),
         ],
       ),
@@ -325,13 +325,13 @@ class _EmptyTimeline extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Text(
-              'No entries yet',
+              S.timelineEmptyTitle,
               key: const Key('timeline_empty_title'),
               style: Theme.of(context).textTheme.titleLarge,
             ),
             const SizedBox(height: 8),
             const Text(
-              'Write your first private note. Everything stays encrypted on this device.',
+              S.timelineEmptyBody,
               key: Key('timeline_empty_body'),
               textAlign: TextAlign.center,
             ),
@@ -364,7 +364,7 @@ class _EntrySummaryTile extends StatelessWidget {
     return ListTile(
       selected: selected,
       title: Text(
-        entry.title.isEmpty ? '(Untitled)' : entry.title,
+        entry.title.isEmpty ? S.timelineUntitled : entry.title,
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
       ),

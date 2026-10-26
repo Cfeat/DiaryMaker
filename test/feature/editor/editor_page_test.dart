@@ -101,8 +101,8 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 50));
 
-    expect(find.text('Unsaved changes'), findsOneWidget);
-    expect(find.text('Discard'), findsOneWidget);
+    expect(find.text('有未保存的更改'), findsOneWidget);
+    expect(find.text('丢弃'), findsOneWidget);
   });
 }
 

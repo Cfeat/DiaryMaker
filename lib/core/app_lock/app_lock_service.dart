@@ -170,7 +170,7 @@ class AppLockService {
     if (_lockedOutNow()) {
       _emit(
         _state.copyWith(
-          errorMessage: 'Too many attempts. Try again later.',
+          errorMessage: '尝试次数过多，请稍后再试',
         ),
       );
       return false;
@@ -197,11 +197,11 @@ class AppLockService {
 
     final attempts = _state.failedAttempts + 1;
     DateTime? lockout;
-    String? error = 'Incorrect PIN';
+    String? error = 'PIN 不正确';
     if (attempts >= maxAttemptsBeforeBackoff) {
       final delaySeconds = _backoffSeconds(attempts);
       lockout = _clock().add(Duration(seconds: delaySeconds));
-      error = 'Incorrect PIN. Locked for ${delaySeconds}s.';
+      error = 'PIN 不正确。已锁定 ${delaySeconds}s';
     }
     _emit(
       _state.copyWith(
@@ -214,13 +214,13 @@ class AppLockService {
   }
 
   Future<bool> unlockWithBiometrics({
-    String reason = 'Unlock PrivateNote',
+    String reason = '解锁私密日记',
   }) async {
     if (!_state.biometricsAvailable) return false;
     if (_lockedOutNow()) {
       _emit(
         _state.copyWith(
-          errorMessage: 'Too many attempts. Try again later.',
+          errorMessage: '尝试次数过多，请稍后再试',
         ),
       );
       return false;
@@ -251,10 +251,10 @@ class AppLockService {
 
   void _validatePinFormat(String pin) {
     if (pin.length < 4 || pin.length > 8) {
-      throw ArgumentError('PIN must be 4?? digits');
+      throw ArgumentError('PIN 须为 4-8 位数字');
     }
     if (!RegExp(r'^\d+$').hasMatch(pin)) {
-      throw ArgumentError('PIN must be numeric');
+      throw ArgumentError('PIN 只能包含数字');
     }
   }
 

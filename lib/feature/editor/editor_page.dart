@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../app/editor_save_gateway.dart';
+import '../../app/l10n/app_strings.dart';
 import '../../app/providers.dart';
 import '../../core/entry/entry.dart';
 
@@ -92,7 +93,7 @@ class _EditorPageState extends ConsumerState<EditorPage> {
       final found = await ref.read(entryRepositoryProvider).getById(id);
       if (found == null) {
         setState(() {
-          _loadError = 'Entry not found';
+          _loadError = S.editorNotFound;
           _loaded = true;
         });
         return;
@@ -158,20 +159,20 @@ class _EditorPageState extends ConsumerState<EditorPage> {
     final result = await showDialog<String>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Unsaved changes'),
-        content: const Text('Save before leaving?'),
+        title: const Text(S.unsavedTitle),
+        content: const Text(S.unsavedBody),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, 'discard'),
-            child: const Text('Discard'),
+            child: const Text(S.discard),
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, 'cancel'),
-            child: const Text('Cancel'),
+            child: const Text(S.cancel),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(ctx, 'save'),
-            child: const Text('Save'),
+            child: const Text(S.save),
           ),
         ],
       ),
@@ -215,8 +216,9 @@ class _EditorPageState extends ConsumerState<EditorPage> {
             key: const Key('editor_title_field'),
             controller: _titleController,
             decoration: const InputDecoration(
-              hintText: 'Title',
+              hintText: S.editorTitleHint,
               border: InputBorder.none,
+              filled: false,
             ),
             style: Theme.of(context).textTheme.titleLarge,
           ),
@@ -234,9 +236,14 @@ class _EditorPageState extends ConsumerState<EditorPage> {
               expands: true,
               maxLines: null,
               textAlignVertical: TextAlignVertical.top,
+              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                    height: 1.7,
+                    fontSize: 17,
+                  ),
               decoration: const InputDecoration(
-                hintText: 'Write freely…',
+                hintText: S.editorBodyHint,
                 border: InputBorder.none,
+                filled: false,
               ),
             ),
           ),
@@ -267,11 +274,11 @@ class _EditorPageState extends ConsumerState<EditorPage> {
       },
       child: Scaffold(
         appBar: AppBar(
-          title: Text(widget.entryId == null ? 'New entry' : 'Edit'),
+          title: Text(widget.entryId == null ? S.editorNew : S.editorEdit),
           actions: [
             IconButton(
               key: const Key('editor_save_button'),
-              tooltip: 'Save',
+              tooltip: S.editorSave,
               onPressed: _saving
                   ? null
                   : () async {

@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:private_note/app/private_note_app.dart';
 import 'package:private_note/app/providers.dart';
+import 'package:private_note/app/theme/appearance_controller.dart';
 import 'package:private_note/core/app_lock/app_lock_service.dart';
 import 'package:private_note/core/entry/entry_repository.dart';
 import 'package:private_note/core/entry/memory_entry_repository.dart';
@@ -18,6 +20,7 @@ import 'package:private_note/foundation/platform/biometric_auth.dart';
 import 'package:private_note/foundation/platform/dart_io_app_host.dart';
 import 'package:private_note/foundation/platform/screen_protection.dart';
 import 'package:private_note/foundation/webdav/memory_webdav_client.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class TestHarness {
   TestHarness({
@@ -30,6 +33,8 @@ class TestHarness {
               supportsBiometrics: false,
             ),
         repository = repository ?? MemoryEntryRepository() {
+    GoogleFonts.config.allowRuntimeFetching = false;
+    SharedPreferences.setMockInitialValues({});
     storage = InMemorySecureStoragePort();
     biometric = const NoOpBiometricAuth();
     screen = const NoOpScreenProtection();
@@ -63,8 +68,10 @@ class TestHarness {
   late final SyncKeyManager syncKeys;
   late final MemoryWebDavClient webdav;
   late final SyncEngine syncEngine;
+  SharedPreferences? prefs;
 
   Future<void> init({bool unlock = false, String pin = '1234'}) async {
+    prefs = await SharedPreferences.getInstance();
     if (unlock) {
       await lockService.setupPin(pin);
     } else {
@@ -73,6 +80,7 @@ class TestHarness {
   }
 
   List<Override> get overrides => [
+        sharedPreferencesProvider.overrideWithValue(prefs!),
         appHostProvider.overrideWithValue(host),
         entryRepositoryProvider.overrideWithValue(repository),
         syncMetaRepositoryProvider.overrideWithValue(syncMeta),

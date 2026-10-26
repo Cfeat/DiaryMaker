@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../app/l10n/app_strings.dart';
 import '../../app/providers.dart';
 import '../../core/sync/sync_credentials_store.dart';
 import '../../core/sync/sync_engine.dart';
 
-/// User-supplied WebDAV only — no official cloud (§2.1).
+/// 用户自备 WebDAV，无官方云（§2.1）。
 class SyncSettingsPage extends ConsumerStatefulWidget {
   const SyncSettingsPage({super.key});
 
@@ -58,13 +59,12 @@ class _SyncSettingsPageState extends ConsumerState<SyncSettingsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Sync settings')),
+      appBar: AppBar(title: const Text(S.syncTitle)),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
           Text(
-            'Diary content is encrypted on this device with AES-256-GCM before '
-            'upload. Your WebDAV server only stores ciphertext.',
+            S.syncIntro,
             style: Theme.of(context).textTheme.bodyMedium,
           ),
           const SizedBox(height: 16),
@@ -72,8 +72,7 @@ class _SyncSettingsPageState extends ConsumerState<SyncSettingsPage> {
             key: const Key('sync_url_field'),
             controller: _url,
             decoration: const InputDecoration(
-              labelText: 'WebDAV URL',
-              border: OutlineInputBorder(),
+              labelText: S.syncUrl,
             ),
             keyboardType: TextInputType.url,
           ),
@@ -82,8 +81,7 @@ class _SyncSettingsPageState extends ConsumerState<SyncSettingsPage> {
             key: const Key('sync_username_field'),
             controller: _user,
             decoration: const InputDecoration(
-              labelText: 'Username',
-              border: OutlineInputBorder(),
+              labelText: S.syncUsername,
             ),
           ),
           const SizedBox(height: 12),
@@ -92,8 +90,7 @@ class _SyncSettingsPageState extends ConsumerState<SyncSettingsPage> {
             controller: _password,
             obscureText: _obscure,
             decoration: InputDecoration(
-              labelText: 'Password / token',
-              border: const OutlineInputBorder(),
+              labelText: S.syncPassword,
               suffixIcon: IconButton(
                 onPressed: () => setState(() => _obscure = !_obscure),
                 icon: Icon(_obscure ? Icons.visibility : Icons.visibility_off),
@@ -104,21 +101,20 @@ class _SyncSettingsPageState extends ConsumerState<SyncSettingsPage> {
           TextField(
             controller: _root,
             decoration: const InputDecoration(
-              labelText: 'Remote folder',
-              border: OutlineInputBorder(),
+              labelText: S.syncRemoteFolder,
             ),
           ),
           const SizedBox(height: 24),
           FilledButton(
             key: const Key('sync_save_button'),
             onPressed: _busy ? null : _save,
-            child: const Text('Save credentials'),
+            child: const Text(S.syncSaveCreds),
           ),
           const SizedBox(height: 8),
           FilledButton.tonal(
             key: const Key('sync_now_button'),
             onPressed: _busy ? null : _syncNow,
-            child: const Text('Sync now'),
+            child: const Text(S.syncNow),
           ),
           if (_status != null) ...[
             const SizedBox(height: 16),
@@ -136,9 +132,9 @@ class _SyncSettingsPageState extends ConsumerState<SyncSettingsPage> {
     });
     try {
       await ref.read(syncCredentialsStoreProvider).save(_form());
-      setState(() => _status = 'Saved (password in secure storage)');
+      setState(() => _status = S.syncSaved);
     } catch (e) {
-      setState(() => _status = 'Save failed: $e');
+      setState(() => _status = S.syncSaveFailed(e));
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -147,7 +143,7 @@ class _SyncSettingsPageState extends ConsumerState<SyncSettingsPage> {
   Future<void> _syncNow() async {
     setState(() {
       _busy = true;
-      _status = 'Syncing…';
+      _status = S.syncing;
     });
     try {
       final creds = _form();
@@ -156,28 +152,21 @@ class _SyncSettingsPageState extends ConsumerState<SyncSettingsPage> {
           await ref.read(syncEngineProvider).synchronize(credentials: creds);
       await ref.read(timelineEntriesProvider.notifier).refresh();
       if (report.error != null) {
-        setState(() => _status = 'Sync error: ${report.error}');
+        setState(() => _status = S.syncError(report.error!));
       } else if (report.hasConflicts) {
         final n = report.results
             .where((r) => r.action == SyncAction.conflict)
             .length;
-        setState(
-          () => _status =
-              'Sync finished with $n conflict(s). Open the timeline to choose.',
-        );
+        setState(() => _status = S.syncConflicts(n));
       } else {
-        final pushed = report.results
-            .where((r) => r.action == SyncAction.pushed)
-            .length;
-        final pulled = report.results
-            .where((r) => r.action == SyncAction.pulled)
-            .length;
-        setState(
-          () => _status = 'Sync OK — pushed $pushed, pulled $pulled',
-        );
+        final pushed =
+            report.results.where((r) => r.action == SyncAction.pushed).length;
+        final pulled =
+            report.results.where((r) => r.action == SyncAction.pulled).length;
+        setState(() => _status = S.syncOk(pushed, pulled));
       }
     } catch (e) {
-      setState(() => _status = 'Sync failed: $e');
+      setState(() => _status = S.syncFailed(e));
     } finally {
       if (mounted) setState(() => _busy = false);
     }

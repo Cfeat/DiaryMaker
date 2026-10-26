@@ -6,7 +6,7 @@ import 'support/test_app.dart';
 void main() {
   testWidgets('PrivateNote shows lock gate before diary UI', (tester) async {
     await pumpPrivateNote(tester, unlocked: false);
-    expect(find.text('PrivateNote'), findsWidgets);
+    expect(find.text('私密日记'), findsWidgets);
     expect(find.byKey(const Key('lock_pin_field')), findsOneWidget);
   });
 }

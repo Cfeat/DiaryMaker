@@ -3,7 +3,7 @@ import 'package:window_manager/window_manager.dart';
 
 /// Custom Windows caption (replaces the default Flutter/OS title bar).
 class WindowsTitleBar extends StatelessWidget implements PreferredSizeWidget {
-  const WindowsTitleBar({super.key, this.title = 'PrivateNote'});
+  const WindowsTitleBar({super.key, this.title = '私密日记'});
 
   final String title;
 

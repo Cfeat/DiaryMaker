@@ -1,4 +1,5 @@
-import 'package:flutter/foundation.dart' show defaultTargetPlatform, TargetPlatform;
+import 'package:flutter/foundation.dart'
+    show defaultTargetPlatform, TargetPlatform;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -7,8 +8,10 @@ import '../feature/app_lock/lock_gate.dart';
 import '../feature/shell/adaptive_shell.dart';
 import '../feature/shell/windows_title_bar.dart';
 import 'editor_save_gateway.dart';
+import 'l10n/app_strings.dart';
 import 'providers.dart';
 import 'shell_action_gateway.dart';
+import 'theme/appearance_controller.dart';
 
 class PrivateNoteApp extends ConsumerWidget {
   const PrivateNoteApp({super.key});
@@ -16,6 +19,7 @@ class PrivateNoteApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final host = ref.watch(appHostProvider);
+    final appearance = ref.watch(appearanceControllerProvider);
     final useMeta = defaultTargetPlatform == TargetPlatform.macOS;
 
     final home = LockGate(
@@ -23,20 +27,27 @@ class PrivateNoteApp extends ConsumerWidget {
     );
 
     final material = MaterialApp(
-      title: 'PrivateNote',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF2F5D50)),
-        useMaterial3: true,
-      ),
+      title: S.appName,
+      locale: const Locale('zh', 'CN'),
+      theme: appearance.theme,
       shortcuts: host.supportsDesktopShortcuts
           ? <ShortcutActivator, Intent>{
               ...WidgetsApp.defaultShortcuts,
-              SingleActivator(LogicalKeyboardKey.keyS, control: !useMeta, meta: useMeta):
-                  const SaveEditorIntent(),
-              SingleActivator(LogicalKeyboardKey.keyN, control: !useMeta, meta: useMeta):
-                  const NewEntryIntent(),
-              SingleActivator(LogicalKeyboardKey.keyL, control: !useMeta, meta: useMeta):
-                  const FocusTimelineIntent(),
+              SingleActivator(
+                LogicalKeyboardKey.keyS,
+                control: !useMeta,
+                meta: useMeta,
+              ): const SaveEditorIntent(),
+              SingleActivator(
+                LogicalKeyboardKey.keyN,
+                control: !useMeta,
+                meta: useMeta,
+              ): const NewEntryIntent(),
+              SingleActivator(
+                LogicalKeyboardKey.keyL,
+                control: !useMeta,
+                meta: useMeta,
+              ): const FocusTimelineIntent(),
             }
           : null,
       actions: host.supportsDesktopShortcuts
@@ -71,7 +82,6 @@ class PrivateNoteApp extends ConsumerWidget {
   }
 }
 
-/// Column: custom caption + app body (default OS title bar disabled).
 class _WindowsChromeShell extends StatelessWidget {
   const _WindowsChromeShell({required this.child});
 
@@ -81,7 +91,7 @@ class _WindowsChromeShell extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        const WindowsTitleBar(),
+        const WindowsTitleBar(title: S.appName),
         Expanded(child: child),
       ],
     );

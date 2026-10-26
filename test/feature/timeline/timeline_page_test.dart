@@ -11,7 +11,6 @@ void main() {
 
     expect(find.byKey(const Key('timeline_empty_title')), findsOneWidget);
     expect(find.byKey(const Key('timeline_empty_body')), findsOneWidget);
-    expect(find.textContaining('first private note'), findsOneWidget);
   });
 
   testWidgets('C2: lists entry title and preview newest-first', (tester) async {

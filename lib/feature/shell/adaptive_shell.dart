@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../app/l10n/app_strings.dart';
 import '../../app/providers.dart';
 import '../../app/shell_action_gateway.dart';
 import '../../core/entry/entry.dart';
@@ -85,7 +86,7 @@ class _AdaptiveShellState extends ConsumerState<AdaptiveShell> {
                     )
                   : _selected == null
                       ? const Center(
-                          child: Text('Select an entry or create a new one'),
+                          child: Text(S.selectOrCreate),
                         )
                       : EditorPage(
                           key: ValueKey(_selected!.id),
