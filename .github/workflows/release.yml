@@ -1,0 +1,172 @@
+# Publish installable packages to GitHub Releases when a version tag is pushed.
+# Example: git tag v1.0.0 && git push origin v1.0.0
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag to create/update (e.g. v1.0.0). Leave empty to only rebuild artifacts without publishing."
+        required: false
+        default: ""
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  PUB_ENVIRONMENT: flutter_bot
+
+jobs:
+  android:
+    name: Android APK
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - run: flutter test
+      - name: Create CI release keystore
+        working-directory: android
+        run: |
+          PASS="ci-$(openssl rand -hex 12)"
+          keytool -genkeypair -v -storetype JKS -keyalg RSA -keysize 2048 \
+            -validity 10000 -alias upload \
+            -keystore upload-keystore.jks \
+            -storepass "$PASS" -keypass "$PASS" \
+            -dname "CN=PrivateNote CI, OU=CI, O=PrivateNote, L=CI, ST=NA, C=US"
+          cat > key.properties <<EOF
+          storePassword=$PASS
+          keyPassword=$PASS
+          keyAlias=upload
+          storeFile=upload-keystore.jks
+          EOF
+      - run: flutter build apk --release
+      - uses: actions/upload-artifact@v4
+        with:
+          name: PrivateNote-android-apk
+          path: build/app/outputs/flutter-apk/app-release.apk
+
+  windows:
+    name: Windows
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - run: flutter test
+      - run: flutter build windows --release
+      - name: Zip Windows package
+        shell: pwsh
+        run: |
+          Compress-Archive -Path "build/windows/x64/runner/Release/*" `
+            -DestinationPath "PrivateNote-windows-x64.zip" -Force
+      - uses: actions/upload-artifact@v4
+        with:
+          name: PrivateNote-windows-x64
+          path: PrivateNote-windows-x64.zip
+
+  apple:
+    name: macOS + iOS
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - run: flutter test
+      - run: flutter build macos --release
+      - run: flutter build ios --release --no-codesign
+      - name: Zip macOS app
+        run: |
+          ditto -c -k --sequesterRsrc --keepParent \
+            "build/macos/Build/Products/Release/PrivateNote.app" \
+            "PrivateNote-macos-arm64-x64.zip" \
+          || (
+            APP="$(find build/macos/Build/Products/Release -maxdepth 1 -name '*.app' | head -n1)"
+            ditto -c -k --sequesterRsrc --keepParent "$APP" "PrivateNote-macos-arm64-x64.zip"
+          )
+      - name: Zip iOS unsigned
+        run: |
+          ditto -c -k --sequesterRsrc --keepParent \
+            "build/ios/iphoneos" \
+            "PrivateNote-ios-unsigned.zip"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: PrivateNote-macos
+          path: PrivateNote-macos-arm64-x64.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: PrivateNote-ios-unsigned
+          path: PrivateNote-ios-unsigned.zip
+
+  publish:
+    name: GitHub Release
+    needs: [android, windows, apple]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Resolve tag
+        id: tag
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ -n "${{ inputs.tag }}" ]; then
+            echo "name=${{ inputs.tag }}" >> "$GITHUB_OUTPUT"
+          elif [[ "${{ github.ref }}" == refs/tags/* ]]; then
+            echo "name=${GITHUB_REF_NAME}" >> "$GITHUB_OUTPUT"
+          else
+            echo "name=" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+
+      - name: Flatten packages
+        run: |
+          mkdir -p packages
+          find dist -type f \( -name '*.apk' -o -name '*.zip' \) -print -exec cp -v {} packages/ \;
+          # Normalize APK name for the release page
+          if [ -f packages/app-release.apk ]; then
+            mv packages/app-release.apk packages/PrivateNote-android.apk
+          fi
+          ls -lah packages
+
+      - name: Create GitHub Release
+        if: steps.tag.outputs.name != ''
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.tag.outputs.name }}
+          name: PrivateNote ${{ steps.tag.outputs.name }}
+          generate_release_notes: true
+          body: |
+            ## 安装包
+
+            | 平台 | 文件 | 说明 |
+            |------|------|------|
+            | Android | `PrivateNote-android.apk` | CI 临时签名，**不可**直接上架 Play；本地正式密钥见 `docs/android_signing.md` |
+            | Windows | `PrivateNote-windows-x64.zip` | 解压后运行 `private_note.exe` |
+            | macOS | `PrivateNote-macos-arm64-x64.zip` | 解压后打开 `.app`（可能需右键「打开」绕过 Gatekeeper） |
+            | iOS | `PrivateNote-ios-unsigned.zip` | **未签名**，仅供开发者自行 codesign / Archive |
+
+            隐私政策：https://cfeat.github.io/DiaryMaker/privacy/
+          files: packages/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
