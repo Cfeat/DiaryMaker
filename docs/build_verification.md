@@ -17,9 +17,12 @@
 - Workflow：`.github/workflows/build.yml`（push `main` / `workflow_dispatch`）
 - Android CI 使用**临时** keystore（非 Play 上传密钥）
 - 正式 Play 上传请使用本机 `android/upload-keystore.jks`（见 `docs/android_signing.md`）
+- Windows CI：已加 `_SILENCE_EXPERIMENTAL_COROUTINE_DEPRECATION_WARNINGS`（MSVC STL1011）
+- 四端 CI：以 GitHub Actions **Build** 最近一次 `success` 为准（Android / Windows / macOS+iOS）
 
 ## 隐私政策公网页
 
-- 目标 URL：https://cfeat.github.io/DiaryMaker/privacy/
+- 公开 URL：https://cfeat.github.io/DiaryMaker/privacy/ （已 HTTP 200）
 - 源文件：`docs/public/privacy/index.html`
 - 部署：`.github/workflows/pages.yml`
+- 仓库：https://github.com/Cfeat/DiaryMaker

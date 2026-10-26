@@ -19,7 +19,7 @@
 
 补充：
 
-- [ ] `main` 分支 GitHub Actions workflow **Build** 最近一次 run 为成功（或本地四端均已 `flutter build … --release` 成功并留存产物）。
+- [x] `main` 分支 GitHub Actions workflow **Build** 已跑通四端（含 Windows MSVC 修复后）；产物见 Actions Artifacts。
 - [ ] iOS 商店包已用正式证书与 Provisioning Profile 签名（CI 的 `--no-codesign` **不能**直接上架）。
 - [x] Android **已移除** debug 签名回退；release 必须提供 `android/key.properties` + keystore（见 `docs/android_signing.md`）。Play 上架请用正式密钥打 AAB。
 
@@ -28,7 +28,7 @@
 ## 2. 隐私政策 URL
 
 - [x] `PRIVACY_POLICY.md` 已写入公开 URL 与 GitHub Issues 联系入口。
-- [ ] 隐私政策已部署到**公网 HTTPS**（目标：https://cfeat.github.io/DiaryMaker/privacy/）；首次 Pages 部署后请人工打开确认。
+- [x] 隐私政策已部署到公网 HTTPS：https://cfeat.github.io/DiaryMaker/privacy/（已测 HTTP 200）。
 - [ ] App Store Connect / Google Play Console 中的「隐私政策」链接与上述 URL 一致。
 - [x] 政策正文仍诚实反映：数据在本机 + 用户自备 WebDAV；开发者不接触日记明文；同步为客户端 AES-256-GCM E2E。
 
