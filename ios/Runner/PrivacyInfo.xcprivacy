@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  PrivateNote / DiaryMaker — App Privacy Manifest
+  Declares: no tracking, no data collected by the developer.
+  Aligns with PRIVACY_ARCHITECTURE.md §2.1 / §2.2.
+  Diary content stays on-device (SQLCipher) or, if the user enables sync,
+  as client-side AES-256-GCM ciphertext on a user-provided WebDAV server.
+  Required Reason API declarations for third-party plugins ship in those
+  plugins' own privacy manifests; this file covers the app target.
+-->
+<plist version="1.0">
+<dict>
+	<key>NSPrivacyTracking</key>
+	<false/>
+	<key>NSPrivacyTrackingDomains</key>
+	<array/>
+	<key>NSPrivacyCollectedDataTypes</key>
+	<array/>
+	<key>NSPrivacyAccessedAPITypes</key>
+	<array/>
+</dict>
+</plist>

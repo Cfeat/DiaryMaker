@@ -1,0 +1,142 @@
+# Phase G — four-platform CI. Hand-written (not flutter_ci_cli) so jobs match
+# ubuntu APK / windows desktop / macos+ios and require tests before each build.
+name: Build
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  PUB_ENVIRONMENT: flutter_bot
+
+jobs:
+  android:
+    name: Android (test → APK release)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Dependencies
+        run: flutter pub get
+
+      - name: Analyze
+        run: flutter analyze --fatal-infos
+
+      - name: Test
+        run: flutter test
+
+      # Ephemeral keystore: proves release packaging without debug signing.
+      # Play uploads must use the maintainer's real upload-keystore (not this file).
+      - name: Create CI release keystore
+        working-directory: android
+        run: |
+          PASS="ci-$(openssl rand -hex 12)"
+          keytool -genkeypair -v -storetype JKS -keyalg RSA -keysize 2048 \
+            -validity 10000 -alias upload \
+            -keystore upload-keystore.jks \
+            -storepass "$PASS" -keypass "$PASS" \
+            -dname "CN=PrivateNote CI, OU=CI, O=PrivateNote, L=CI, ST=NA, C=US"
+          cat > key.properties <<EOF
+          storePassword=$PASS
+          keyPassword=$PASS
+          keyAlias=upload
+          storeFile=upload-keystore.jks
+          EOF
+
+      - name: Build APK (release)
+        run: flutter build apk --release
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-release-apk
+          path: build/app/outputs/flutter-apk/app-release.apk
+
+  windows:
+    name: Windows (test → desktop release)
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Dependencies
+        run: flutter pub get
+
+      - name: Analyze
+        run: flutter analyze --fatal-infos
+
+      - name: Test
+        run: flutter test
+
+      - name: Build Windows (release)
+        run: flutter build windows --release
+
+      - name: Upload Windows artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-release
+          path: build/windows/x64/runner/Release/
+
+  apple:
+    name: macOS + iOS (test → release builds)
+    runs-on: macos-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Dependencies
+        run: flutter pub get
+
+      - name: Analyze
+        run: flutter analyze --fatal-infos
+
+      - name: Test
+        run: flutter test
+
+      - name: Build macOS (release)
+        run: flutter build macos --release
+
+      - name: Build iOS (release, no codesign)
+        run: flutter build ios --release --no-codesign
+
+      - name: Upload macOS artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-release
+          path: build/macos/Build/Products/Release/
+
+      - name: Upload iOS unsigned artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-release-unsigned
+          path: build/ios/iphoneos/
