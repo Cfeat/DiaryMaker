@@ -79,41 +79,41 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
 
     final conflicts = ref.watch(syncConflictsProvider);
 
+    // Keep AppBar (incl. settings) even when embedded in desktop split —
+    // otherwise wide Windows/macOS windows hide the only settings entry.
     return Scaffold(
-      appBar: widget.embedded
-          ? null
-          : AppBar(
-              title: const Text(S.timelineTitle),
-              actions: [
-                conflicts.when(
-                  data: (list) => list.isEmpty
-                      ? const SizedBox.shrink()
-                      : IconButton(
-                          key: const Key('timeline_conflict_button'),
-                          tooltip: S.timelineConflicts,
-                          onPressed: () => _showConflicts(list),
-                          icon: Badge(
-                            label: Text('${list.length}'),
-                            child: const Icon(Icons.warning_amber_outlined),
-                          ),
-                        ),
-                  loading: () => const SizedBox.shrink(),
-                  error: (_, _) => const SizedBox.shrink(),
+      appBar: AppBar(
+        title: const Text(S.timelineTitle),
+        actions: [
+          conflicts.when(
+            data: (list) => list.isEmpty
+                ? const SizedBox.shrink()
+                : IconButton(
+                    key: const Key('timeline_conflict_button'),
+                    tooltip: S.timelineConflicts,
+                    onPressed: () => _showConflicts(list),
+                    icon: Badge(
+                      label: Text('${list.length}'),
+                      child: const Icon(Icons.warning_amber_outlined),
+                    ),
+                  ),
+            loading: () => const SizedBox.shrink(),
+            error: (_, _) => const SizedBox.shrink(),
+          ),
+          IconButton(
+            key: const Key('timeline_sync_settings'),
+            tooltip: S.timelineSyncSettings,
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => const SettingsHubPage(),
                 ),
-                IconButton(
-                  key: const Key('timeline_sync_settings'),
-                  tooltip: S.timelineSyncSettings,
-                  onPressed: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute<void>(
-                        builder: (_) => const SettingsHubPage(),
-                      ),
-                    );
-                  },
-                  icon: const Icon(Icons.tune_outlined),
-                ),
-              ],
-            ),
+              );
+            },
+            icon: const Icon(Icons.settings_outlined),
+          ),
+        ],
+      ),
       floatingActionButton: widget.embedded
           ? null
           : FloatingActionButton(
